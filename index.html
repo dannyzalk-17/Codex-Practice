@@ -227,7 +227,6 @@
       <div id="map"></div>
 
       <div class="actions">
-        <button id="startBtn" type="button">Start Campaign</button>
         <button id="recruitBtn" type="button">Recruit Feudal Retinue (120 florins)</button>
         <button id="buildBtn" type="button">Construct Keep Upgrade (180 florins)</button>
         <button id="taxBtn" type="button">Raise Tax Level (+20 florins, -1 growth)</button>
@@ -268,7 +267,6 @@
       year: 1080,
       gold: 620,
       authority: 6,
-      started: false,
       selectedRegionId: 1,
       regions: [
         { id: 1, name: 'London', owner: 'player', army: 28, income: 120, keep: 2, growth: 2, capital: true },
@@ -298,11 +296,6 @@
     const taxBtn = document.getElementById('taxBtn');
     const invadeBtn = document.getElementById('invadeBtn');
     const endTurnBtn = document.getElementById('endTurnBtn');
-    const startBtn = document.getElementById('startBtn');
-
-    function clampNonNegative(value) {
-      return Math.max(0, value);
-    }
 
     function getSelectedRegion() {
       return state.regions.find((r) => r.id === state.selectedRegionId);
@@ -354,13 +347,6 @@
       buildBtn.disabled = !playerRegion;
       taxBtn.disabled = !playerRegion;
       invadeBtn.disabled = playerRegion;
-
-      if (!state.started) {
-        recruitBtn.disabled = true;
-        buildBtn.disabled = true;
-        taxBtn.disabled = true;
-        invadeBtn.disabled = true;
-      }
     }
 
     function renderHUD() {
@@ -370,16 +356,6 @@
       totalArmyEl.textContent = state.regions
         .filter((r) => r.owner === 'player')
         .reduce((sum, r) => sum + r.army, 0);
-    }
-
-    function render() {
-      renderHUD();
-      renderMap();
-      renderSelection();
-      renderLog();
-
-      startBtn.disabled = state.started;
-      endTurnBtn.disabled = !state.started;
     }
 
     function renderLog() {
@@ -415,7 +391,6 @@
     }
 
     recruitBtn.addEventListener('click', () => {
-      if (!state.started) return;
       const region = getSelectedRegion();
       if (!region || region.owner !== 'player') return;
       if (state.gold < 120) {
@@ -431,7 +406,6 @@
     });
 
     buildBtn.addEventListener('click', () => {
-      if (!state.started) return;
       const region = getSelectedRegion();
       if (!region || region.owner !== 'player') return;
       if (region.keep >= 4) {
@@ -454,7 +428,6 @@
     });
 
     taxBtn.addEventListener('click', () => {
-      if (!state.started) return;
       const region = getSelectedRegion();
       if (!region || region.owner !== 'player') return;
       region.income += 20;
@@ -465,7 +438,6 @@
     });
 
     invadeBtn.addEventListener('click', () => {
-      if (!state.started) return;
       const target = getSelectedRegion();
       const muster = state.regions
         .filter((r) => r.owner === 'player')
@@ -474,30 +446,23 @@
       if (!target || target.owner === 'player' || !muster) return;
 
       const expedition = Math.max(10, Math.floor(muster.army * 0.65));
-      const committed = Math.min(muster.army, expedition);
-      muster.army = clampNonNegative(muster.army - committed);
+      muster.army -= expedition;
 
-      if (committed === 0) {
-        log(`No troops are available in ${muster.name} to launch an invasion.`, 'bad');
-        render();
-        return;
-      }
-
-      const attackerPower = committed + state.authority * 3 + muster.keep * 8;
+      const attackerPower = expedition + state.authority * 3 + muster.keep * 8;
       const defenderPower = target.army + (target.owner === 'ai' ? 10 : 4) + target.keep * 8;
       const result = resolveBattle(attackerPower, defenderPower);
 
       if (result > 0) {
         const survivorLoss = Math.max(4, Math.floor(target.army * 0.35));
         target.owner = 'player';
-        target.army = Math.max(8, committed - survivorLoss);
+        target.army = Math.max(8, expedition - survivorLoss);
         state.authority += 1;
         state.gold += 90;
         log(`Campaign victory! ${target.name} falls to your banners.`, 'good');
       } else {
-        const retreatLoss = Math.max(4, Math.floor(committed * 0.5));
-        muster.army += Math.max(0, committed - retreatLoss);
-        target.army = Math.max(6, target.army - Math.floor(committed * 0.2));
+        const retreatLoss = Math.max(4, Math.floor(expedition * 0.5));
+        muster.army += Math.max(0, expedition - retreatLoss);
+        target.army = Math.max(6, target.army - Math.floor(expedition * 0.2));
         state.authority = Math.max(1, state.authority - 1);
         log(`Defeat at ${target.name}. Survivors stagger home in disorder.`, 'bad');
       }
@@ -530,8 +495,6 @@
             log(`French armies stormed ${target.name}.`, 'bad');
           }
         }
-
-        region.army = clampNonNegative(region.army);
       });
     }
 
@@ -562,19 +525,9 @@
         state.authority = Math.max(1, state.authority - 1);
         log('Debt crisis weakens your authority across the realm.', 'bad');
       }
-
-      state.regions.forEach((region) => {
-        region.army = clampNonNegative(region.army);
-      });
     }
 
     function endTurn() {
-      if (!state.started) {
-        log('Click "Start Campaign" before ending the first turn.', 'bad');
-        render();
-        return;
-      }
-
       state.year += 2;
       applyEconomy();
       aiTurn();
@@ -587,17 +540,9 @@
       render();
     }
 
-    startBtn.addEventListener('click', () => {
-      if (state.started) return;
-      state.started = true;
-      log('Campaign map activated. Issue your first royal decrees.', 'good');
-      render();
-    });
-
     endTurnBtn.addEventListener('click', endTurn);
 
     log('Campaign begins in the Year of Our Lord 1080.', 'muted');
-    log('Click "Start Campaign" to begin issuing orders.', 'muted');
     log('Your dynasty must secure five regions to dominate the realm.', 'muted');
     render();
   </script>
