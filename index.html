@@ -3,57 +3,603 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello Homepage</title>
+  <title>Kingdoms of Iron & Oath</title>
   <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+    :root {
+      color-scheme: dark;
+      --bg: #0f1116;
+      --panel: #1a1e27;
+      --panel-soft: #242937;
+      --ink: #e6dfc9;
+      --accent: #b88b4a;
+      --enemy: #8e2f2f;
+      --ally: #3c6f3f;
+      --neutral: #5b6073;
+      --danger: #dc6a6a;
     }
 
-    main {
-      text-align: center;
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1d2230, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #2d3242;
+      background: rgba(10, 11, 14, 0.6);
+      backdrop-filter: blur(4px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
 
     h1 {
-      margin-top: 0;
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .subtitle {
+      margin-top: 0.2rem;
+      color: #b9b2a0;
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 2.3fr 1.4fr;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: linear-gradient(165deg, var(--panel), #131721);
+      border: 1px solid #31384b;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: var(--panel-soft);
+      border: 1px solid #3d4358;
+      border-radius: 8px;
+      padding: 0.65rem;
+      font-size: 0.95rem;
+    }
+
+    .card strong {
+      color: #f3e5b8;
+    }
+
+    #map {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .region {
+      border-radius: 10px;
+      border: 1px solid #474f67;
+      padding: 0.75rem;
+      min-height: 120px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease;
+      background: linear-gradient(180deg, #293042, #1f2432 56%);
+    }
+
+    .region:hover {
+      transform: translateY(-2px);
+      border-color: #c1995d;
+    }
+
+    .region.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(184, 139, 74, 0.4);
+    }
+
+    .owner-player { border-left: 4px solid var(--ally); }
+    .owner-ai { border-left: 4px solid var(--enemy); }
+    .owner-rebel { border-left: 4px solid var(--neutral); }
+
+    .region h3 {
+      margin: 0 0 0.3rem;
+      font-size: 1rem;
+      color: #f4e7c2;
+    }
+
+    .region p {
+      margin: 0.18rem 0;
+      color: #d5cdb7;
+      font-size: 0.88rem;
+    }
+
+    .actions {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.8rem;
     }
 
     button {
-      border: none;
+      width: 100%;
+      border: 1px solid #6f5733;
       border-radius: 8px;
-      padding: 0.7rem 1.2rem;
-      font-size: 1rem;
+      background: linear-gradient(180deg, #b88b4a, #8a6734);
+      color: #101015;
+      font-weight: 700;
+      padding: 0.62rem;
       cursor: pointer;
-      background: #2563eb;
-      color: white;
     }
 
-    button:hover {
-      background: #1d4ed8;
+    button:disabled {
+      background: #50576c;
+      border-color: #5a6071;
+      color: #bfc4d0;
+      cursor: not-allowed;
+    }
+
+    .danger {
+      border-color: #8f3939;
+      background: linear-gradient(180deg, #a74949, #7b2f2f);
+      color: #fff;
+    }
+
+    .log {
+      margin-top: 0.9rem;
+      background: #11151f;
+      border: 1px solid #30384a;
+      border-radius: 8px;
+      max-height: 230px;
+      overflow: auto;
+      padding: 0.7rem;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .log-entry { margin-bottom: 0.45rem; }
+    .good { color: #91da91; }
+    .bad { color: #f09a9a; }
+    .muted { color: #b2b9cb; }
+
+    .right-col h2,
+    .right-col h3 {
+      margin: 0.2rem 0 0.45rem;
+      color: #f2e0b5;
+    }
+
+    .detail {
+      font-size: 0.92rem;
+      color: #d1c7ab;
+      margin-bottom: 0.2rem;
+    }
+
+    ul {
+      margin: 0.3rem 0 0.7rem 1rem;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 0.25rem;
+      color: #d9d0b8;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .hud {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
   </style>
 </head>
 <body>
-  <main>
-    <h1 id="greeting">Hello</h1>
-    <button id="changeTextButton" type="button">Change text</button>
+  <header>
+    <h1>Kingdoms of Iron & Oath</h1>
+    <div class="subtitle">A compact turn-based campaign inspired by Medieval II and Stainless Steel.</div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="hud">
+        <div class="card"><strong>Year:</strong> <span id="year"></span></div>
+        <div class="card"><strong>Treasury:</strong> <span id="gold"></span> florins</div>
+        <div class="card"><strong>Authority:</strong> <span id="authority"></span></div>
+        <div class="card"><strong>Total Forces:</strong> <span id="totalArmy"></span></div>
+      </div>
+
+      <div id="map"></div>
+
+      <div class="actions">
+        <button id="startBtn" type="button">Start Campaign</button>
+        <button id="recruitBtn" type="button">Recruit Feudal Retinue (120 florins)</button>
+        <button id="buildBtn" type="button">Construct Keep Upgrade (180 florins)</button>
+        <button id="taxBtn" type="button">Raise Tax Level (+20 florins, -1 growth)</button>
+        <button id="invadeBtn" type="button" class="danger">Launch Campaign Against Selected Region</button>
+        <button id="endTurnBtn" type="button">End Turn</button>
+      </div>
+
+      <div id="log" class="log" aria-live="polite"></div>
+    </section>
+
+    <aside class="panel right-col">
+      <h2>Province Ledger</h2>
+      <p id="selectionTitle" class="detail">Select a region to issue orders.</p>
+      <p class="detail" id="selectionOwner"></p>
+      <p class="detail" id="selectionEconomy"></p>
+      <p class="detail" id="selectionArmy"></p>
+      <p class="detail" id="selectionGrowth"></p>
+
+      <h3>Faction Doctrine</h3>
+      <ul>
+        <li>Army upkeep costs 12 florins per turn per region garrison.</li>
+        <li>Keep upgrades improve income and levy quality.</li>
+        <li>High authority improves battle morale and lowers revolt risk.</li>
+        <li>Win by controlling 5 regions; lose if your capital falls.</li>
+      </ul>
+
+      <h3>How Battles Resolve</h3>
+      <ul>
+        <li>Power = army strength + keep level × 8 + authority bonus.</li>
+        <li>Randomized commander traits simulate medieval uncertainty.</li>
+        <li>Heavy losses can trigger rebel uprisings in weak provinces.</li>
+      </ul>
+    </aside>
   </main>
 
   <script>
-    const greeting = document.getElementById('greeting');
-    const button = document.getElementById('changeTextButton');
+    const state = {
+      year: 1080,
+      gold: 620,
+      authority: 6,
+      started: false,
+      selectedRegionId: 1,
+      regions: [
+        { id: 1, name: 'London', owner: 'player', army: 28, income: 120, keep: 2, growth: 2, capital: true },
+        { id: 2, name: 'York', owner: 'player', army: 18, income: 90, keep: 1, growth: 1, capital: false },
+        { id: 3, name: 'Caen', owner: 'player', army: 17, income: 95, keep: 1, growth: 1, capital: false },
+        { id: 4, name: 'Paris', owner: 'ai', army: 22, income: 110, keep: 2, growth: 2, capital: true },
+        { id: 5, name: 'Toulouse', owner: 'ai', army: 14, income: 84, keep: 1, growth: 1, capital: false },
+        { id: 6, name: 'Milan', owner: 'rebel', army: 12, income: 78, keep: 1, growth: 1, capital: false }
+      ],
+      log: []
+    };
 
-    button.addEventListener('click', () => {
-      greeting.textContent = 'Hello, you clicked the button!';
+    const map = document.getElementById('map');
+    const yearEl = document.getElementById('year');
+    const goldEl = document.getElementById('gold');
+    const authorityEl = document.getElementById('authority');
+    const totalArmyEl = document.getElementById('totalArmy');
+    const selectionTitle = document.getElementById('selectionTitle');
+    const selectionOwner = document.getElementById('selectionOwner');
+    const selectionEconomy = document.getElementById('selectionEconomy');
+    const selectionArmy = document.getElementById('selectionArmy');
+    const selectionGrowth = document.getElementById('selectionGrowth');
+    const logEl = document.getElementById('log');
+
+    const recruitBtn = document.getElementById('recruitBtn');
+    const buildBtn = document.getElementById('buildBtn');
+    const taxBtn = document.getElementById('taxBtn');
+    const invadeBtn = document.getElementById('invadeBtn');
+    const endTurnBtn = document.getElementById('endTurnBtn');
+    const startBtn = document.getElementById('startBtn');
+
+    function clampNonNegative(value) {
+      return Math.max(0, value);
+    }
+
+    function getSelectedRegion() {
+      return state.regions.find((r) => r.id === state.selectedRegionId);
+    }
+
+    function log(message, tone = 'muted') {
+      state.log.unshift({ message, tone });
+      state.log = state.log.slice(0, 12);
+    }
+
+    function ownerLabel(owner) {
+      if (owner === 'player') return 'Kingdom of England';
+      if (owner === 'ai') return 'Kingdom of France';
+      return 'Rebel Lords';
+    }
+
+    function renderMap() {
+      map.innerHTML = '';
+      state.regions.forEach((region) => {
+        const tile = document.createElement('article');
+        tile.className = `region owner-${region.owner} ${region.id === state.selectedRegionId ? 'selected' : ''}`;
+        tile.innerHTML = `
+          <h3>${region.name}</h3>
+          <p><strong>Owner:</strong> ${ownerLabel(region.owner)}</p>
+          <p><strong>Army:</strong> ${region.army}</p>
+          <p><strong>Income:</strong> ${region.income}</p>
+          <p><strong>Keep:</strong> ${region.keep}</p>
+        `;
+        tile.addEventListener('click', () => {
+          state.selectedRegionId = region.id;
+          render();
+        });
+        map.appendChild(tile);
+      });
+    }
+
+    function renderSelection() {
+      const region = getSelectedRegion();
+      if (!region) return;
+
+      selectionTitle.textContent = `${region.name}${region.capital ? ' (Capital Province)' : ''}`;
+      selectionOwner.textContent = `Owner: ${ownerLabel(region.owner)}`;
+      selectionEconomy.textContent = `Income: ${region.income} | Keep tier: ${region.keep}`;
+      selectionArmy.textContent = `Garrison strength: ${region.army}`;
+      selectionGrowth.textContent = `Population growth: ${region.growth}`;
+
+      const playerRegion = region.owner === 'player';
+      recruitBtn.disabled = !playerRegion;
+      buildBtn.disabled = !playerRegion;
+      taxBtn.disabled = !playerRegion;
+      invadeBtn.disabled = playerRegion;
+
+      if (!state.started) {
+        recruitBtn.disabled = true;
+        buildBtn.disabled = true;
+        taxBtn.disabled = true;
+        invadeBtn.disabled = true;
+      }
+    }
+
+    function renderHUD() {
+      yearEl.textContent = state.year;
+      goldEl.textContent = state.gold;
+      authorityEl.textContent = state.authority;
+      totalArmyEl.textContent = state.regions
+        .filter((r) => r.owner === 'player')
+        .reduce((sum, r) => sum + r.army, 0);
+    }
+
+    function render() {
+      renderHUD();
+      renderMap();
+      renderSelection();
+      renderLog();
+
+      startBtn.disabled = state.started;
+      endTurnBtn.disabled = !state.started;
+    }
+
+    function renderLog() {
+      logEl.innerHTML = state.log
+        .map((entry) => `<div class="log-entry ${entry.tone}">• ${entry.message}</div>`)
+        .join('');
+    }
+
+    function checkVictory() {
+      const playerRegions = state.regions.filter((r) => r.owner === 'player');
+      const enemyRegions = state.regions.filter((r) => r.owner === 'ai');
+      const playerCapital = state.regions.find((r) => r.capital && r.name === 'London');
+
+      if (!playerCapital || playerCapital.owner !== 'player') {
+        alert('Defeat: London has fallen. Your dynasty is extinguished.');
+        window.location.reload();
+        return true;
+      }
+
+      if (playerRegions.length >= 5 || enemyRegions.length === 0) {
+        alert('Victory: You forged a dominant medieval empire!');
+        window.location.reload();
+        return true;
+      }
+
+      return false;
+    }
+
+    function resolveBattle(attackerPower, defenderPower) {
+      const attackerRoll = Math.floor(Math.random() * 16) - 5;
+      const defenderRoll = Math.floor(Math.random() * 16) - 5;
+      return attackerPower + attackerRoll - (defenderPower + defenderRoll);
+    }
+
+    recruitBtn.addEventListener('click', () => {
+      if (!state.started) return;
+      const region = getSelectedRegion();
+      if (!region || region.owner !== 'player') return;
+      if (state.gold < 120) {
+        log('Insufficient florins to recruit new levies.', 'bad');
+        renderLog();
+        return;
+      }
+      state.gold -= 120;
+      const gain = 8 + region.keep * 2;
+      region.army += gain;
+      log(`Recruited ${gain} men-at-arms in ${region.name}.`, 'good');
+      render();
     });
+
+    buildBtn.addEventListener('click', () => {
+      if (!state.started) return;
+      const region = getSelectedRegion();
+      if (!region || region.owner !== 'player') return;
+      if (region.keep >= 4) {
+        log(`${region.name} already has a formidable fortress complex.`, 'muted');
+        renderLog();
+        return;
+      }
+      if (state.gold < 180) {
+        log('Treasury lacks funds for a keep expansion.', 'bad');
+        renderLog();
+        return;
+      }
+      state.gold -= 180;
+      region.keep += 1;
+      region.income += 18;
+      region.growth += 1;
+      state.authority += 1;
+      log(`${region.name} expanded to keep tier ${region.keep}. Nobility approves.`, 'good');
+      render();
+    });
+
+    taxBtn.addEventListener('click', () => {
+      if (!state.started) return;
+      const region = getSelectedRegion();
+      if (!region || region.owner !== 'player') return;
+      region.income += 20;
+      region.growth = Math.max(-1, region.growth - 1);
+      state.authority = Math.max(1, state.authority - 1);
+      log(`Tax burden raised in ${region.name}; unrest rises among peasants.`, 'bad');
+      render();
+    });
+
+    invadeBtn.addEventListener('click', () => {
+      if (!state.started) return;
+      const target = getSelectedRegion();
+      const muster = state.regions
+        .filter((r) => r.owner === 'player')
+        .sort((a, b) => b.army - a.army)[0];
+
+      if (!target || target.owner === 'player' || !muster) return;
+
+      const expedition = Math.max(10, Math.floor(muster.army * 0.65));
+      const committed = Math.min(muster.army, expedition);
+      muster.army = clampNonNegative(muster.army - committed);
+
+      if (committed === 0) {
+        log(`No troops are available in ${muster.name} to launch an invasion.`, 'bad');
+        render();
+        return;
+      }
+
+      const attackerPower = committed + state.authority * 3 + muster.keep * 8;
+      const defenderPower = target.army + (target.owner === 'ai' ? 10 : 4) + target.keep * 8;
+      const result = resolveBattle(attackerPower, defenderPower);
+
+      if (result > 0) {
+        const survivorLoss = Math.max(4, Math.floor(target.army * 0.35));
+        target.owner = 'player';
+        target.army = Math.max(8, committed - survivorLoss);
+        state.authority += 1;
+        state.gold += 90;
+        log(`Campaign victory! ${target.name} falls to your banners.`, 'good');
+      } else {
+        const retreatLoss = Math.max(4, Math.floor(committed * 0.5));
+        muster.army += Math.max(0, committed - retreatLoss);
+        target.army = Math.max(6, target.army - Math.floor(committed * 0.2));
+        state.authority = Math.max(1, state.authority - 1);
+        log(`Defeat at ${target.name}. Survivors stagger home in disorder.`, 'bad');
+      }
+
+      render();
+      checkVictory();
+    });
+
+    function aiTurn() {
+      const aiRegions = state.regions.filter((r) => r.owner === 'ai');
+      const playerRegions = state.regions.filter((r) => r.owner === 'player');
+      if (!aiRegions.length || !playerRegions.length) return;
+
+      aiRegions.forEach((region) => {
+        if (Math.random() < 0.45) {
+          region.army += 4 + region.keep;
+        }
+
+        if (Math.random() < 0.35 && playerRegions.length) {
+          const target = playerRegions[Math.floor(Math.random() * playerRegions.length)];
+          const attackPower = region.army + region.keep * 7 + 6;
+          const defendPower = target.army + target.keep * 8 + state.authority * 2;
+          const outcome = resolveBattle(attackPower, defendPower);
+
+          if (outcome > 4) {
+            const losses = Math.max(5, Math.floor(target.army * 0.45));
+            target.owner = 'ai';
+            target.army = Math.max(7, region.army - losses);
+            region.army = Math.max(6, Math.floor(region.army * 0.5));
+            log(`French armies stormed ${target.name}.`, 'bad');
+          }
+        }
+
+        region.army = clampNonNegative(region.army);
+      });
+    }
+
+    function applyEconomy() {
+      let income = 0;
+      let upkeep = 0;
+
+      state.regions.forEach((region) => {
+        if (region.owner === 'player') {
+          income += region.income + region.growth * 4;
+          upkeep += Math.floor(region.army * 0.12);
+
+          if (region.growth < 0 && Math.random() < 0.3) {
+            region.army = Math.max(5, region.army - 3);
+            log(`Unrest in ${region.name} reduced available troops.`, 'bad');
+          }
+        }
+
+        if (region.owner === 'rebel' && Math.random() < 0.4) {
+          region.army += 2;
+        }
+      });
+
+      state.gold += income - upkeep;
+      log(`Treasury report: +${income} income, -${upkeep} upkeep.`, income >= upkeep ? 'good' : 'bad');
+
+      if (state.gold < 0) {
+        state.authority = Math.max(1, state.authority - 1);
+        log('Debt crisis weakens your authority across the realm.', 'bad');
+      }
+
+      state.regions.forEach((region) => {
+        region.army = clampNonNegative(region.army);
+      });
+    }
+
+    function endTurn() {
+      if (!state.started) {
+        log('Click "Start Campaign" before ending the first turn.', 'bad');
+        render();
+        return;
+      }
+
+      state.year += 2;
+      applyEconomy();
+      aiTurn();
+      state.regions.forEach((region) => {
+        if (region.owner === 'player') {
+          region.army += Math.max(0, region.growth);
+        }
+      });
+      checkVictory();
+      render();
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (state.started) return;
+      state.started = true;
+      log('Campaign map activated. Issue your first royal decrees.', 'good');
+      render();
+    });
+
+    endTurnBtn.addEventListener('click', endTurn);
+
+    log('Campaign begins in the Year of Our Lord 1080.', 'muted');
+    log('Click "Start Campaign" to begin issuing orders.', 'muted');
+    log('Your dynasty must secure five regions to dominate the realm.', 'muted');
+    render();
   </script>
 </body>
 </html>
